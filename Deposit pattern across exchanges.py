@@ -83,4 +83,26 @@ fig_deposit.update(layout = dict(xaxis = dict(title = dict(text = 'Date', font =
             title = dict(text = 'Deposit pattern across exchanges', font =dict(size= 20), xanchor = "auto")))
 fig_deposit.show()
 
-#
+#热图DF配置
+deposit_transfer['Date'] = deposit_transfer.apply(lambda  x: set_Date(x['UTC']),axis = 1)
+heatmap_22 = deposit_transfer[deposit_transfer["Date"] == '2019-11-22']
+heatmap_22_pivot = pd.DataFrame({'deposit_destination':[],'Eth_Value':[],'hour':[]})
+for hour in range(12):
+    deposit_hour = heatmap_22[(heatmap_22['UTC'] >= datetime.datetime.strptime(hour_list_22[hour], "%Y-%m-%d %H:%M:%S")) & \
+                              (heatmap_22['UTC'] <= datetime.datetime.strptime(hour_list_22[hour + 1], "%Y-%m-%d %H:%M:%S"))].groupby('deposit_destination').sum()
+    deposit_hour['hour'] = hour_list_22[hour]
+    deposit_hour = deposit_hour.reset_index(drop = False)
+    heatmap_22_pivot = heatmap_22_pivot.append(deposit_hour,ignore_index=True)
+heatmap_22_pivot = heatmap_22_pivot.pivot('deposit_destination','hour','Eth_Value')
+
+#画热图
+sns.set(style='whitegrid',font_scale=1.4)
+plt.figure(figsize = (15,8))
+ax = sns.heatmap(heatmap_22_pivot,linewidths = 0.12, vmax=10000, vmin=0, center=5000,cmap = 'rainbow',
+                linecolor = 'grey',robust = True)
+ax.set_xticklabels(hour_list_22,rotation=45)
+ax.set_yticklabels(['Binance','Bitfinex','Gemini','Huobi','Kraken','Poloniex'],rotation=0)
+ax.set_xlabel('Hour')
+ax.set_ylabel('Deposit destination')
+ax.set_title('Deposit pattern transfer value analysis')
+plt.show()
